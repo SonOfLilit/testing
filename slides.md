@@ -106,9 +106,7 @@ Testing is <span class="green">risk management</span>
 
 #### Testing toolbox
 
-#### Putting it to practice
-
-#### War stories and design exercises
+#### Design exercises
 
 #### Things that are hard to test
 
@@ -234,7 +232,7 @@ list(range(start=1, stop=10, step=3))  # => [1, 4, 7, 9]
 
 ```python
 assert (
-    list(range(3)) == list(range(0, 3)) == 
+    list(range(3)) == list(range(0, 3)) ==
     list(range(0, 3, 1)) == [0, 1, 2]
 )
 assert list(range(1, 3)) == [1, 2]
@@ -256,7 +254,7 @@ assert list(range(5, 0, -1)) == [5, 4, 3, 2, 1]
 
 ```python
 assert (
-    list(range(3)) == list(range(0, 3)) == 
+    list(range(3)) == list(range(0, 3)) ==
     list(range(0, 3, 1)) == [0, 1, 2]
 )
 assert list(range(1, 3)) == [1, 2]
@@ -281,7 +279,7 @@ assert list(range(5, 0, -2)) == [5, 3, 1]
 
 ```python
 assert (
-    list(range(3)) == list(range(0, 3)) == 
+    list(range(3)) == list(range(0, 3)) ==
     list(range(0, 3, 1)) == [0, 1, 2])
 assert list(range(1, 3)) == [1, 2]
 assert list(range(1, 6, 2)) == [1, 3, 5]
@@ -314,7 +312,7 @@ except TypeError: pass
 <div class="flex">
 
 ```python
-assert (list(range(3)) == list(range(0, 3)) == 
+assert (list(range(3)) == list(range(0, 3)) ==
         list(range(0, 3, 1)) == [0, 1, 2])
 assert list(range(2, 3)) == [2]
 assert list(range(3, 3)) == []
@@ -391,7 +389,483 @@ def normalize_shekel_string(string):
 assert normalize_shekel_string("שנים עשר שמונים") == "שתים עשרה שקל ושמונים אגורות"
 ```
 
-Who can find a real bug? (I couldn't, but it's too much logic to not have any)
+Who can find a bug? (I couldn't, but there's enough logic that there must be)
+
+---
+
+<!-- _class: lead -->
+
+# Testing stateful systems
+
+The <span class="red">state</span> is another dimension in the problem space
+
+It gets ugly fast.
+
+---
+
+<!-- _class: lead -->
+
+# Testing stateful systems
+
+As much as you can, avoid writing stateful systems.
+
+![height: 500px](assets/funcore-impshell.svg)
+
+---
+
+![bg fit](assets/funcore-impshell.svg)
+
+---
+
+# Testing stateful systems
+
+<style scoped>
+section {
+    background: url(assets/funcore-impshell.svg) 960px 510px no-repeat;
+    background-color: white;
+    background-size: 60%;
+}
+</style>
+
+```python
+user = create_account(name="Adam")
+pizza = create_item(name="Pizza", price="$9.99")
+add_to_shopping_cart(user, pizza, quantity=1)
+shopping_cart = get_shopping_cart(user)
+assert len(shopping_cart) == 1
+(item,) = shopping_cart
+assert item.id == pizza.id and item.quantity == 1
+finalize_order(user, credit_card="XXXX-XXXX-XXXX-XXXX")
+assert not get_shopping_cart(user)
+```
+
+How do we add more tests?
+
+---
+
+# Testing stateful systems
+
+<style scoped>
+section {
+    background: url(assets/funcore-impshell.svg) 960px 510px no-repeat;
+    background-color: white;
+    background-size: 60%;
+}
+</style>
+
+```python
+user = create_account(name="Adam")
+pizza = create_item(name="Pizza", price="$9.99")
+add_to_shopping_cart(user, pizza, quantity=2)
+(item,) = get_shopping_cart(user)
+assert item.id == pizza.id and item.quantity == 2
+remove_from_shopping_cart(user, pizza, quantity=1)
+(item,) = get_shopping_cart(user)
+assert item.id == pizza.id and item.quantity == 1
+finalize_order(user, credit_card="XXXX-XXXX-XXXX-XXXX")
+assert not get_shopping_cart(user)
+```
+
+We had stateful code. We tested it with a stateful test.
+<span class="red">Now we have two problems</span>.
+It's very hard to <span class="red">add nother case without breaking</span> anything
+or to <span class="red">figure out why it failed</span>.
+
+---
+
+# Lets try again.
+
+<style scoped>
+section {
+    background: url(assets/funcore-impshell.svg) 960px 510px no-repeat;
+    background-color: white;
+    background-size: 60%;
+}
+</style>
+
+```python
+user = create_account(name="Adam")
+pizza = create_item(name="Pizza", price="$9.99")
+add_to_shopping_cart(user, pizza, quantity=2)
+(item,) = get_shopping_cart(user)
+assert item.id == pizza.id and item.quantity == 2
+
+user = create_account(name="Adam")
+pizza = create_item(name="Pizza", price="$9.99")
+add_to_shopping_cart(user, pizza, quantity=2)
+remove_from_shopping_cart(user, pizza, quantity=1)
+(item,) = get_shopping_cart(user)
+assert item.id == pizza.id and item.quantity == 1
+                                                                                                            
+user = create_account(name="Adam")
+pizza = create_item(name="Pizza", price="$9.99")
+add_to_shopping_cart(user, pizza, quantity=2)
+remove_from_shopping_cart(user, pizza, quantity=1)
+finalize_order(user, credit_card="XXXX-XXXX-XXXX-XXXX")
+assert not get_shopping_cart(user)
+```
+
+We managed to hide the devil, but he still lurks.
+This is <span class="red">slow</span>, and test speed is essential to happy, effective devs.
+It's also repetitive, so <span class="red">mistakes</span> won't be noticed (I made one).
+
+---
+
+# Again.
+
+<style scoped>
+section {
+    background: url(assets/funcore-impshell.svg) 960px 510px no-repeat;
+    background-color: white;
+    background-size: 60%;
+}
+</style>
+
+```python
+def setup_pizza_test(quantity=1):
+    user = create_account(name="Adam")
+    pizza = create_item(name="Pizza", price="$9.99")
+    add_to_shopping_cart(user, pizza, quantity=quantity)
+    (item,) = get_shopping_cart(user)    
+    return user, pizza, item
+
+user, pizza, item = setup_pizza_test()
+assert item.id == pizza.id and item.quantity == 2
+
+user, pizza, item = setup_pizza_test(quantity=2)
+remove_from_shopping_cart(user, pizza, quantity=1)
+(item,) = get_shopping_cart(user)
+assert item.id == pizza.id and item.quantity == 1
+                                                                                                            
+user, pizza, item = setup_pizza_test(quantity=1)
+finalize_order(user, credit_card="XXXX-XXXX-XXXX-XXXX")
+assert not get_shopping_cart(user)
+```
+
+Who put <span class="yellow">spaghetti</span> in my pizza test? `setup()` tends to grow wild.
+
+Still, this is usually the winning tradeoff. Unless we can make the
+business logic <span class="green">stateless</span>...
+
+---
+
+<!-- _class: lead -->
+
+## A message from the Devil:
+# Even if you split your test cases between several `test_*()` functions, feel free to make assumptions about the order in which they run. Hehe. Hehehehe.
+
+<br/>
+<br/>
+<br/>
+<br/>
+<br/> 
+
+<style scoped>
+section {
+    background: url(assets/funcore-impshell.svg) 700px 360px no-repeat;
+    background-color: white;
+    background-size: 100%;
+}
+</style>
+
+---
+
+<!-- _class: lead -->
+
+## Testing toolbox
+
+Given...When...Then
+
+Setup/Teardown/Fixtures
+
+Parametrize
+
+Mocks
+
+TDD
+
+Coverage
+
+Things that are hard to test
+
+---
+
+It's standard to write tests with this structure:
+
+## Given...When...Then
+
+```python
+def test_finalize_order_empties_shopping_cart():
+    # Given: a user's shopping cart with one pizza
+    user = create_account(name="Adam")
+    pizza = create_item(name="Pizza", price="$9.99")
+    add_to_shopping_cart(user, pizza, quantity=quantity)
+
+    # When: I finalize the order
+    finalize_order(user, credit_card="XXXX-XXXX-XXXX-XXXX")
+
+    # Then: The shopping cart is now empty
+    shopping_cart = get_shopping_cart(user)
+    assert not shopping_cart
+```
+
+Google's testing book calls this DAMP tests, meaning each test is a "Descriptive And Meaningful Phrase" and <span class="yellow">not DRY</span> (tests repeat themselves!).
+
+---
+
+# DRY or DAMP?
+
+Should you optimize for <span class="grape">maintainability and ease of writing tests</span> or for <span class="yellow">ease of reading a single test in isolation</span>?
+
+Accepted wisdom is <span class="yellow">the latter</span>, I advise to <span class="green">try to strike a good balance</span>.
+
+<span class="yellow">If you have 100 test</span> like "<span class="cyan">add some standard items to the shop, create a user, do a series of adds/removes on their shopping cart, check what's in the shopping cart</span>", you can afford to write a <span class="green">test harness</span>. If you only have 5 and they're not super identical, <span class="yellow">just copy paste</span>.
+
+---
+
+## Setup/Teardown/Fixtures
+
+Traditional xUnit test frameworks have a hierarchy of `setup()`/`teardown()` hooks (for *tests* and *test suites*).
+
+`pytest` improves on it with `fixtures`, a *dependency injection* mechanism for resources used by tests.
+
+---
+
+### Fixtures
+
+```python
+import pytest
+
+@pytest.fixture
+def shop(scope="session"):  # runs once before first test
+    pizza = create_item(name="Pizza", price="$9.99")
+@pytest.fixture
+def user():
+    user = create_account(name="Adam")
+    yield user
+    close_account(user)  # you can teardown resources
+@pytest.fixture
+def cart_item(shop, user):  # fixtures can depend on other fixtures
+    add_to_shopping_cart(user, pizza, quantity=1)
+    (item,) = get_shopping_cart(user)
+    yield item
+
+def test_finalize_order_empties_shopping_cart(user, cart_item):                         
+    finalize_order(user, credit_card="XXXX-XXXX-XXXX-XXXX")
+    shopping_cart = get_shopping_cart(user)
+    assert not shopping_cart
+```
+
+---
+
+## Parametrization
+
+The poor man's *test harness*, good enough in 80% of cases.
+
+```python
+@pytest.mark.parametrize(
+    "amount,hebrew",
+    [
+        (1, "שקל אחד"),
+        (2, "שני שקלים"),
+        (10, "עשרה שקלים"),
+        # ...
+        # Decimal tests
+        (1.23, "שקל אחד ועשרים ושלוש אגורות"),
+        # ...
+        # Error cases
+        (None, ""),
+        ("א", "לא הוקש סכום תקין"),
+        (1222333444555, "לא הוקש סכום תקין"),                                         
+    ],
+)
+def test_conversion(amount, hebrew):
+    assert amount_to_shekels_in_hebrew(amount) == hebrew
+```
+
+---
+
+## Mocks
+
+Should we actually talk to the credit card processor when testing "finalizing an order"? <span class="green">Probably not</span>. And to the DB?
+
+Python has <span class="grape">*absolutely magical*</span> libaries for saying "this test believes as dogma that this other code behaves as follows", from "<span class="cyan">make the system clock always say midnight</span>" to "<span class="teal">when sending a POST request to `stripe.com/api/charge`, it will return HTTP 405 the first time and this JSON document the second time, also assert it was called with the right params</span>".
+
+---
+
+## `MagicMock` and `patch`
+
+```python
+from unittest.mock import MagicMock, patch
+
+def test_finalize_order_empties_shopping_cart(user, cart_item):
+    _pay(user)
+    shopping_cart = get_shopping_cart(user)
+    assert not shopping_cart
+
+@patch("time.time", return_value=12345)
+@patch("requests.post")
+def _pay(mock_time, mock_post, user):
+    mock_post.return_value.json.return_value = {"id": "123"}
+
+    order = get_order_summary(user)
+    assert mock_post.assert_called_once_with("https://.../api/initiate", json={...})
+
+    mock_post.reset_mock()
+    payment = initiate_payment(order)
+    receive_payment_success(order, {"payment_id": "123", "token": "123"})
+    assert mock_post.assert_called_once_with("https://.../api/validate", json={...})
+```
+
+---
+
+<!-- _class: lead -->
+
+<div class="flex">
+
+# What should we mock?
+
+![](assets/testing-pyramid.svg)
+
+</div>
+
+---
+
+<!-- _class: lead -->
+
+<div class="flex">
+
+<div>
+
+# What should we mock?
+
+Still, in a web app we should probably not mock the DB.
+
+But our ORM can, with SQLite!
+
+</div>
+
+![](assets/testing-pyramid.svg)
+
+</div>
+
+---
+
+<!-- _class: lead -->
+
+# Let's look at some tests!
+
+[The `warehouse` (PyPI) tests](https://github.com/pypi/warehouse/tree/main/tests). Look at their [session tests](https://github.com/pypi/warehouse/blob/main/tests/unit/test_sessions.py). <span class="green">What's their stance on "test one thing per test"?</span>
+
+[The `httpx` HTTP client tests](https://github.com/encode/httpx/tree/master/tests). Fixtures are in `conftest.py`. Find the `GET /` test. Find test for JSON encode/decode. <span class="green">What did they choose to mock?</div>
+
+[The SQLAlchemy (database ORM) tests](https://github.com/sqlalchemy/sqlalchemy/tree/main/test
+). Find the tests that together say "`SELECT field FROM table` does what we want". <span class="green">Where are they on DRY/DAMP question?</span>
+
+
+Which test suite did you like the most? Why?
+
+---
+
+<!-- _class: lead -->
+
+# <span class="red">T</span><span class="green">D</span><span class="blue">D</span>
+
+## Test Driven Development
+
+<span class="red">Red (failing test)</span>
+<span class="green">Green (minimal change that fixes it)</span>
+<span class="blue">Refactor (if needed)</span>
+<span class="grape">Repeat.</span>
+
+---
+
+<!-- _class: lead -->
+
+
+## TDD is actually not about tests, it's about design.
+
+But it's a good way to practice testing. Lets build FizzBuzz with TDD.
+
+```python
+def fizzbuzz(n):
+    pass
+assert fizzbuzz(1) == "1"
+
+# what's the minimal fix to make it green?
+```
+
+Try it for a week. I myself do pseudo-TDD. I write pseudocode for tests before the first line of code, so my design will be testable.
+
+---
+
+# Coverage metrics
+
+```bash
+$ pytest --cov=myproject tests/
+======================== test session starts ========================
+tests/test_shekels.py::test_simple_amounts PASSED
+tests/test_shekels.py::test_edge_cases PASSED
+tests/test_shekels.py::test_large_numbers PASSED
+
+---------- coverage: platform linux, python 3.11.0 ----------
+Name                  Stmts   Miss  Cover
+-----------------------------------------
+myproject/shekels.py     45      3    93%
+myproject/utils.py       20      0   100%
+-----------------------------------------
+TOTAL                    65      3    95%
+```
+
+<span class="green">100% coverage ≠ bug-free</span>
+Coverage shows what you <span class="red">didn't</span> test
+
+---
+
+<!-- _class: lead -->
+
+# Things that are hard to test
+
+### <span class="red">UI</span> - Automated visuals tests probably not worth the effort
+
+### <span class="red">Nondeterministic code</span> - Duh. Wait, why are you writing it?
+
+### <span class="red">Distributed code</span> - Oof. Good luck. Read some [jepsen](https://aphyr.com/posts/284-jepsen-mongodb) posts.
+
+---
+
+<!-- _class: lead -->
+
+# Lets design tests!
+
+## How would you test `glob.glob`?
+
+https://docs.python.org/3/library/glob.html
+
+### Write a full suite of test cases in pseudo-code
+
+
+---
+
+<!-- _class: lead -->
+
+# Design exercise
+
+## How would you test the ChatGPT backend?
+(the consumer app, *not* the GPT API, which one of your dependencies)
+### Write some example test cases in pseudo-code
+
+---
+
+<!-- _class: lead -->
+
+# Things that are hard to test
+
+### <span class="red">UI</span> - Automated visuals tests probably not worth the effort
+
+### <span class="red">Nondeterministic code</span> - Duh. Wait, why are you writing it?
+
+### <span class="red">Distributed code</span> - Oof. Good luck. Read some [jepsen](https://aphyr.com/posts/284-jepsen-mongodb) posts.
 
 ---
 
@@ -401,32 +875,32 @@ Who can find a real bug? (I couldn't, but it's too much logic to not have any)
 - 2m why test
 - 2m what is testing
 
-Part I - xUnit tests
+60m Part I - xUnit tests
 
 - 10m lets write a test
-
   - 5m setup
   - 5m exercise
-
-- 4m choosing good test cases
+- 5m choosing good test cases
   - simple
   - cover every subdivision
   - there are surprising subdivisions
   - hug the borders tightly
   - look for multipoints
- - 5m again + exercise
+- 5m again + exercise
+- 15m Testing exercise
+- 5m stateful systems
+- 20m testing toolbox
+  - 2m given...when...then..., DRY vs DAMP
+  - 2m setup/teardown/fixture
+  - 1m parametrization
+  - 5m mocks
+  - 10m critique exercise
 
-- stateful systems
-- advanced features:
-  - given...when...then...
-  - setup/teardown/fixture
-  - parametrization
-  - mocks
-- putting it to practice
-- war stories and design exercises
-- things that are hard to test: UI, nondeterministic code
+5m break
 
-Part II - testing prompts with statistical tests (evaluations)
+- 20m design exercises
+
+60m Part II - testing prompts with statistical tests (evaluations)
 
 - lets use an LLM to process a freeform request
 - how to think about "correctness"
@@ -439,8 +913,11 @@ Part II - testing prompts with statistical tests (evaluations)
   - using a weak LLM to approximate confidence
 - production monitoring
 
-Part III - other approaches
+60m Part III - other approaches
 
+- TDD, fizzbuzz exercise
+- coverage
+- things that are hard to test: UI, nondeterministic code
 - BDD
 - FIT
 - golden/snapshot testing
@@ -522,7 +999,7 @@ Part III - other approaches
         color: var(--oc-yellow-6);
     }
     h3 {
-        color: var(--oc-violet-6);
+        color: var(--oc-grape-6);
     }
     a[href] {
         text-decoration: underline;
@@ -564,6 +1041,9 @@ Part III - other approaches
     }
     .violet {
         color: var(--oc-violet-6);
+    }
+    .grape {
+        color: var(--oc-grape-6);
     }
     .black {
         color: var(--oc-black);
