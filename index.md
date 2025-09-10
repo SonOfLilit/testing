@@ -801,7 +801,7 @@ https://docs.python.org/3/library/glob.html
 
 ## How would you test the ChatGPT backend?
 
-(the consumer app, _not_ the GPT API, which one of your dependencies)
+(the consumer app, _not_ the GPT API, which is one of your dependencies)
 
 ### Write some example test cases in pseudo-code
 
