@@ -498,7 +498,7 @@ add_to_shopping_cart(user, pizza, quantity=2)
 remove_from_shopping_cart(user, pizza, quantity=1)
 (item,) = get_shopping_cart(user)
 assert item.id == pizza.id and item.quantity == 1
-                                                                                                            
+
 user = create_account(name="Adam")
 pizza = create_item(name="Pizza", price="$9.99")
 add_to_shopping_cart(user, pizza, quantity=2)
@@ -554,13 +554,14 @@ business logic <span class="green">stateless</span>...
 <!-- _class: lead -->
 
 ## A message from the Devil:
+
 # Even if you split your test cases between several `test_*()` functions, feel free to make assumptions about the order in which they run. Hehe. Hehehehe.
 
 <br/>
 <br/>
 <br/>
 <br/>
-<br/> 
+<br/>
 
 <style scoped>
 section {
@@ -621,9 +622,9 @@ Accepted wisdom is <span class="yellow">the latter</span>, I advise to <span cla
 
 ## Setup/Teardown/Fixtures
 
-Traditional xUnit test frameworks have a hierarchy of `setup()`/`teardown()` hooks (for *tests* and *test suites*).
+Traditional xUnit test frameworks have a hierarchy of `setup()`/`teardown()` hooks (for _tests_ and _test suites_).
 
-`pytest` improves on it with `fixtures`, a *dependency injection* mechanism for resources used by tests.
+`pytest` improves on it with `fixtures`, a _dependency injection_ mechanism for resources used by tests.
 
 ---
 
@@ -656,7 +657,7 @@ def test_finalize_order_empties_shopping_cart(user, cart_item):
 
 ## Parametrization
 
-The poor man's *test harness*, good enough in 80% of cases.
+The poor man's _test harness_, good enough in 80% of cases.
 
 ```python
 @pytest.mark.parametrize(
@@ -685,7 +686,7 @@ def test_conversion(amount, hebrew):
 
 Should we actually talk to the credit card processor when testing "finalizing an order"? <span class="green">Probably not</span>. And to the DB?
 
-Python has <span class="grape">*absolutely magical*</span> libaries for saying "this test believes as dogma that this other code behaves as follows", from "<span class="cyan">make the system clock always say midnight</span>" to "<span class="teal">when sending a POST request to `stripe.com/api/charge`, it will return HTTP 405 the first time and this JSON document the second time, also assert it was called with the right params</span>".
+Python has <span class="grape">_absolutely magical_</span> libaries for saying "this test believes as dogma that this other code behaves as follows", from "<span class="cyan">make the system clock always say midnight</span>" to "<span class="teal">when sending a POST request to `stripe.com/api/charge`, it will return HTTP 405 the first time and this JSON document the second time, also assert it was called with the right params</span>".
 
 ---
 
@@ -717,6 +718,28 @@ def _pay(mock_time, mock_post, user):
 
 <!-- _class: lead -->
 
+## VCR
+
+```python
+import vcr
+
+def test_finalize_order_empties_shopping_cart(user, cart_item):
+    _pay(user)
+    shopping_cart = get_shopping_cart(user)
+    assert not shopping_cart
+
+with vcr.use_cassette('fixtures/vcr_cassettes/payment.yaml'):
+def _pay(user):
+    order = get_order_summary(user)
+    payment = initiate_payment(order)
+    receive_payment_success(order, {"payment_id": "123", "token": "123"})
+```
+
+---
+
+<!-- _class: lead -->
+
+## `pip install vcrpy` works for HTTP, but you can easily implement your own VCR for anything
 
 ---
 
@@ -760,9 +783,7 @@ But our ORM can, with SQLite!
 
 [The `httpx` HTTP client tests](https://github.com/encode/httpx/tree/master/tests). Fixtures are in `conftest.py`. Find the `GET /` test. Find test for JSON encode/decode. <span class="green">What did they choose to mock?</div>
 
-[The SQLAlchemy (database ORM) tests](https://github.com/sqlalchemy/sqlalchemy/tree/main/test
-). Find the tests that together say "`SELECT field FROM table` does what we want". <span class="green">Where are they on DRY/DAMP question?</span>
-
+[The SQLAlchemy (database ORM) tests](https://github.com/sqlalchemy/sqlalchemy/tree/main/test). Find the tests that together say "`SELECT field FROM table` does what we want". <span class="green">Where are they on DRY/DAMP question?</span>
 
 Which test suite did you like the most? Why?
 
@@ -779,7 +800,9 @@ https://docs.python.org/3/library/glob.html
 ### Write a full suite of test cases in pseudo-code
 
 ## How would you test the ChatGPT backend?
-(the consumer app, *not* the GPT API, which one of your dependencies)
+
+(the consumer app, _not_ the GPT API, which one of your dependencies)
+
 ### Write some example test cases in pseudo-code
 
 ---
@@ -1040,7 +1063,6 @@ Design exercise: Testing a chatbot
 
 <!-- _class: lead -->
 
-
 ## TDD is actually not about tests, it's about design.
 
 But it's a good way to practice testing. Lets build FizzBuzz with TDD.
@@ -1229,9 +1251,9 @@ You're building a 0% AI, 100% scripted sales chatbot
 - B: מה שם הרחוב? (בלי מספר)
 - שינקין
 - B: מה מספר הבניין/בית?
-- '1'
+- "1"
 - B: מה מספר המיקוד?
-- '1231234'
+- "1231234"
 - B: |-
     *סיכום פרטי האלבום עד כה:*
     *שם + שם משפחה:* טסט בוט
@@ -1240,8 +1262,8 @@ You're building a 0% AI, 100% scripted sales chatbot
     *גודל האלבום הנבחר:* בינוני - 20X54
     *כתובת למשלוח:* גבעתיים, שינקין 1, דירה: 2, מיקוד: 1231234
   buttons:
-  - אישור
-  - עריכה
+    - אישור
+    - עריכה
 - אישור
 ```
 
