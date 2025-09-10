@@ -498,7 +498,7 @@ add_to_shopping_cart(user, pizza, quantity=2)
 remove_from_shopping_cart(user, pizza, quantity=1)
 (item,) = get_shopping_cart(user)
 assert item.id == pizza.id and item.quantity == 1
-
+                                                                                                            
 user = create_account(name="Adam")
 pizza = create_item(name="Pizza", price="$9.99")
 add_to_shopping_cart(user, pizza, quantity=2)
