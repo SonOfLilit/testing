@@ -647,7 +647,7 @@ def cart_item(shop, user):  # fixtures can depend on other fixtures
     (item,) = get_shopping_cart(user)
     yield item
 
-def test_finalize_order_empties_shopping_cart(user, cart_item):                         
+def test_finalize_order_empties_shopping_cart(user, cart_item):
     finalize_order(user, credit_card="XXXX-XXXX-XXXX-XXXX")
     shopping_cart = get_shopping_cart(user)
     assert not shopping_cart
@@ -673,7 +673,7 @@ The poor man's _test harness_, good enough in 80% of cases.
         # Error cases
         (None, ""),
         ("א", "לא הוקש סכום תקין"),
-        (1222333444555, "לא הוקש סכום תקין"),                                         
+        (1222333444555, "לא הוקש סכום תקין"),
     ],
 )
 def test_conversion(amount, hebrew):
