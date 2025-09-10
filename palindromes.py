@@ -39,6 +39,7 @@ TOPICS = [
     "quiet library",
     "busy marketplace",
 ]
+random.seed(42)
 random.shuffle(TOPICS)
 N = 10
 assert len(TOPICS) == 2 * N
