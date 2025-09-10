@@ -20,7 +20,7 @@ background-color: white
 
 ## <span class="green">II</span> Evaluating prompts
 
-## <span class="green">III</span> Other approaches
+## <span class="green">III</span> Mastery
 
 ---
 
@@ -582,12 +582,6 @@ Parametrize
 
 Mocks
 
-TDD
-
-Coverage
-
-Things that are hard to test
-
 ---
 
 It's standard to write tests with this structure:
@@ -721,6 +715,11 @@ def _pay(mock_time, mock_post, user):
 
 <!-- _class: lead -->
 
+
+---
+
+<!-- _class: lead -->
+
 <div class="flex">
 
 # What should we mock?
@@ -764,6 +763,263 @@ But our ORM can, with SQLite!
 
 
 Which test suite did you like the most? Why?
+
+---
+
+<!-- _class: lead -->
+
+# Lets design tests!
+
+## How would you test `glob.glob`?
+
+https://docs.python.org/3/library/glob.html
+
+### Write a full suite of test cases in pseudo-code
+
+## How would you test the ChatGPT backend?
+(the consumer app, *not* the GPT API, which one of your dependencies)
+### Write some example test cases in pseudo-code
+
+---
+
+<!-- _class: lead -->
+
+# Part II - Testing prompts with statistical tests
+
+#### Let's use an LLM to process a request
+
+#### How to think about "correctness"
+
+#### Train/test split
+
+#### Quality measures
+
+#### Production monitoring
+
+---
+
+<!-- _class: lead -->
+
+# Let's use an LLM to process a request
+
+```python
+from pydantic import BaseModel, Field
+from pydantic_ai import Agent
+
+class PalindromeGeneration(BaseModel):
+    palindrome: str = Field(description="The generated palindrome")
+
+generator_agent = Agent(
+    model="google-gla:gemini-2.0-flash-lite",
+    output_type=PalindromeGeneration,
+    system_prompt="""You are a creative palindrome generator. Create palindromes that:
+1. Are related to the given topic
+2. Make grammatical and semantic sense
+""",
+)
+def generate_palindrome(topic):
+    prompt = f"Create a palindrome related to the topic: {topic}"
+    return generator_agent.run_sync(prompt).output
+```
+
+How do we test <span class="red">non-deterministic</span> outputs?
+
+---
+
+# Traditional test won't work
+
+```python
+def test_palindrome():
+    topic = "quest for the holy grail"
+    result = generate_palindrome(topic)
+
+    # This might fail randomly!
+    assert result.palindrome == "Sir, a Grail, a liar, Garis!"
+```
+
+---
+
+<!-- _class: lead -->
+
+# What is a "correct" answer?
+
+## <span class="grape">Signal + Noise</span> -> <span class="green">[Our Test]</span> -> <span class="grape">Signal + Noise
+
+![height:400px](assets/science.jpg)
+
+---
+
+<!-- _class: lead -->
+
+# Quality measures
+
+## Deterministic measurements
+
+## Accuracy curves
+
+## Human as judge
+
+## LLM as judge
+
+## Ensemble
+
+---
+
+<!-- _class: lead -->
+
+## Noisy Metrics
+
+```python
+import numpy as np
+agent = Agent(OpenAIModel("gemini-embedding-001"))
+
+def embedding_correlation(a, b):
+    e_a, e_b = agent.run_sync(a), agent.run_sync(b)
+    correlation = np.dot(e_a, e_b) / (
+        np.linalg.norm(e_a) * np.linalg.norm(e_b))
+    return correlation
+
+correlation = embedding_correlation(
+    "quest for the holy grail",
+    "Sir, a Grail, a liar, Garis!"
+)
+```
+
+---
+
+<!-- _class: lead -->
+
+## Deterministic measurements
+
+```python
+def is_palindrome(text: str) -> bool:
+    cleaned = re.sub(r"[^a-zA-Z0-9]", "", text.lower())
+    return cleaned == cleaned[::-1]
+```
+
+---
+
+<div class="flex">
+
+## Accuracy curves
+
+![](assets/roc-curve.svg)
+
+</div>
+
+---
+
+<!-- _class: lead -->
+
+## Human as judge 😩
+
+![height:500px](assets/argilla.png)
+
+---
+
+<!-- _class: lead -->
+
+## LLM as judge
+
+```python
+class PalindromeEvaluation(BaseModel):
+    sense_score: int = Field(description="How much sense it makes (1-10)", ge=1, le=10)
+    topic_score: int = Field(description="How on topic it is (1-10)", ge=1, le=10)
+
+evaluator_agent = Agent(
+    model="google-gla:gemini-2.0-flash-lite",
+    output_type=PalindromeEvaluation,
+    system_prompt="""You are a creative writing teacher. Evaluate this short text on:
+
+1. Sense (1-10): How grammatically correct and semantically meaningful is it?
+2. Topic relevance (1-10): How well does it relate to the assigned topic?
+""",
+)
+```
+
+---
+
+<!-- _class: lead -->
+
+## Ensemble
+
+```python
+generation = generate_palindrome(topic)
+evaluation = evaluate_palindrome(topic, generation.palindrome)
+is_valid_palindrome = is_palindrome(generation.palindrome)
+palindrome_score = 10 * is_valid_palindrome
+average_score = (
+    palindrome_score + evaluation.sense_score + evaluation.topic_score
+) / 3
+```
+
+---
+
+<!-- _class: lead -->
+
+# Train/test split
+
+```python
+all_examples = load_examples()
+random.shuffle(all_examples)
+
+# 80/20 split
+train_set = all_examples[:800]  # For prompt engineering
+test_set = all_examples[800:]   # For evaluation
+
+# Use train_set to iterate on your prompt
+# Use test_set ONCE to measure final quality
+```
+
+<span class="red">Never</span> look at test set results until you're done!
+
+### Remember: if you already know the answer, it's fake science
+
+---
+
+<!-- _class: lead -->
+
+# Production monitoring
+
+## <span class="green">Log everything</span>
+
+## Track quality metrics over time
+
+## A/B test prompt changes
+
+## Monitor for drift
+
+---
+
+<!-- _class: lead -->
+
+# It's science time!
+
+```
+uv run python palindrome.py train
+```
+
+## Exercise: design a prompt to maximize `average_score`
+
+---
+
+<!-- _class: lead -->
+
+# Part III - Mastery
+
+TDD
+
+Coverage
+
+Things that are hard to test
+
+BDD & FIT
+
+Golden/snapshot testing
+
+Design exercise: Testing a chatbot
+
+<span class="yellow">Blesstests</span>
 
 ---
 
@@ -836,100 +1092,241 @@ Coverage shows what you <span class="red">didn't</span> test
 
 <!-- _class: lead -->
 
-# Lets design tests!
+# BDD (Behavior-Driven Development)
 
-## How would you test `glob.glob`?
+## Tests are <span class="green">executable specifications</span>
 
-https://docs.python.org/3/library/glob.html
+```gherkin
+Scenario: Counting people in departments
+  Given a set of specific users
+     | name      | department  |
+     | Barry     | Arguments   |
+     | Pudey     | Silly Walks |
+     | Two-Lumps | Silly Walks |
 
-### Write a full suite of test cases in pseudo-code
-
-
----
-
-<!-- _class: lead -->
-
-# Design exercise
-
-## How would you test the ChatGPT backend?
-(the consumer app, *not* the GPT API, which one of your dependencies)
-### Write some example test cases in pseudo-code
+ When we count the number of people in each department
+ Then we will find two people in "Silly Walks"
+  But we will find one person in "Arguments"
+```
 
 ---
 
 <!-- _class: lead -->
 
-# Things that are hard to test
+# BDD implementation
 
-### <span class="red">UI</span> - Automated visuals tests probably not worth the effort
+```python
+from behave import given, when, then
 
-### <span class="red">Nondeterministic code</span> - Duh. Wait, why are you writing it?
+@given("a set of specific users")
+def step_impl(context):
+    for row in context.table:
+        model.add_user(name=row["name"], department=row["department"])
 
-### <span class="red">Distributed code</span> - Oof. Good luck. Read some [jepsen](https://aphyr.com/posts/284-jepsen-mongodb) posts.
+@when("we count the number of people in each department")
+def step_impl(context):
+    context.department_counts = model.count_by_department()
+
+@then('we will find {count:d} (?:person|people) in "{department}"')
+def step_impl(context, count, department):
+    actual_count = context.department_counts.get(department, 0)
+    assert actual_count == count, f"Expected {count} people in {department}, but found {actual_count}"
+```
+
+<span class="green">Product managers can write tests!</span>
+<span class="red">I think it's enough that they can write test cases and read test reports</span>
 
 ---
 
-5m Intro
+# FIT (Framework for Integrated Test)
 
-- 1m who
-- 2m why test
-- 2m what is testing
+A dialect of BDD that uses Excel (FIT) or a wiki (FitNesse) to write tables of test case parameters.
 
-60m Part I - xUnit tests
+---
 
-- 10m lets write a test
-  - 5m setup
-  - 5m exercise
-- 5m choosing good test cases
-  - simple
-  - cover every subdivision
-  - there are surprising subdivisions
-  - hug the borders tightly
-  - look for multipoints
-- 5m again + exercise
-- 15m Testing exercise
-- 5m stateful systems
-- 20m testing toolbox
-  - 2m given...when...then..., DRY vs DAMP
-  - 2m setup/teardown/fixture
-  - 1m parametrization
-  - 5m mocks
-  - 10m critique exercise
+<!-- _class: lead -->
 
-5m break
+# Golden/Snapshot testing
 
-- 20m design exercises
+```python
+def test_render_invoice():
+    assert range(1) == snapshot()
+    assert range(0, 1) == snapshot()
+    assert range(0, 1, 1) == snapshot()
 
-60m Part II - testing prompts with statistical tests (evaluations)
+    assert range(0, 1, 0) == snapshot()
+    assert range(0, -1, -1) == snapshot()
 
-- lets use an LLM to process a freeform request
-- how to think about "correctness"
-- train/test split
-- quality measures:
-  - deterministic measurements
-  - accuracy curve, false positives and false negatives
-  - human as judge
-  - strong LLM as judge
-  - using a weak LLM to approximate confidence
-- production monitoring
+    assert range(0, 0, 1) == snapshot()
+    assert range(0, 0, 0) == snapshot()
+    assert range(0, 0, -1) == snapshot()
 
-60m Part III - other approaches
+    assert range(0, 2, 1) == snapshot()
+    assert range(0, 2, 0) == snapshot()
+    assert range(0, -2, -1) == snapshot()
+```
 
-- TDD, fizzbuzz exercise
-- coverage
-- things that are hard to test: UI, nondeterministic code
-- BDD
-- FIT
-- golden/snapshot testing
-- exercise: tailoring a testing approach for a deterministic chatbot
-- my own contribution to the field: bless tests
-  - the basic technique
-  - designing good harnesses
-  - advanced blessing techniques
-  - using it in a team
-  - lessons learned applying it in the field
-  - exercise: testing a complex algorithm with the blesstest library
-- final design exercise
+Run it and it becomes...
+
+---
+
+# Golden/Snapshot testing
+
+```python
+def test_render_invoice():
+from inline_snapshot import snapshot
+from inline_snapshot.extra import raises
+
+
+def test_range():
+    assert range(1) == snapshot(range(0, 1))
+    assert range(0, 1) == snapshot(range(0, 1))
+    assert range(0, 1, 1) == snapshot(range(0, 1))
+
+    with raises(snapshot("ValueError: range() arg 3 must not be zero")):
+        range(0, 1, 0)
+    assert range(0, -1, -1) == snapshot(range(0, -1, -1))
+    # ...
+```
+
+---
+
+## Golden tests meet world
+
+## <span class="green">Benefits</span>
+
+- Catches <span class="blue">unexpected changes</span>
+- Very low friction to add tests
+- Great for complex outputs (HTML, reports, tables, generated code)
+
+## <span class="red">Pitfalls</span>
+
+- Tests become <span class="red">change detectors</span> (also <span class="green">yay</span>!)
+- Need to think while running tests (also <span class="green">yay</span>!)
+- Non-deterministic data (timestamps, IDs) needs to be normalized
+- Higher friction to touch mature project (reflects reality... but <span class="red">must-fix</span>)
+
+---
+
+<!-- _class: lead -->
+
+# Design exercise: Testing a chatbot
+
+You're building a 0% AI, 100% scripted sales chatbot
+
+## How would you test it?
+
+---
+
+```yaml
+- import test_default_init_album
+- לבחירת אלבום בינוני
+- B: אנא כתבו את הכתובת אליה נשלח אליכם את האלבום
+- B: מה שם העיר?
+- גבעתיים
+- B: מה שם הרחוב? (בלי מספר)
+- שינקין
+- B: מה מספר הבניין/בית?
+- '1'
+- B: מה מספר המיקוד?
+- '1231234'
+- B: |-
+    *סיכום פרטי האלבום עד כה:*
+    *שם + שם משפחה:* טסט בוט
+    *כתובת מייל:* test@albooms.co.il
+    *שם האירוע שיופיע על כריכת האלבום:* בדיקה אוטומטית
+    *גודל האלבום הנבחר:* בינוני - 20X54
+    *כתובת למשלוח:* גבעתיים, שינקין 1, דירה: 2, מיקוד: 1231234
+  buttons:
+  - אישור
+  - עריכה
+- אישור
+```
+
+---
+
+<!-- _class: lead -->
+
+<style scoped>
+.magic span {
+    display: inline-block;
+    font-size: 1.2em;
+    background-image: linear-gradient(45deg, #6930c3, #5390d9);
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    &:nth-child(1) {
+        animation-delay: 0s;
+    }
+    &:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    &:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    &:nth-child(4) {
+        animation-delay: 0.6s;
+    }
+    &:nth-child(5) {
+        animation-delay: 0.8s;
+    }
+    animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+    0%, 100% {
+        transform: translateY(10px);
+        background-position: 0 50%;
+    }
+    50% {
+        transform: translateY(-10px);
+        background-position: 100% 50%;
+    }
+}
+</style>
+
+# <span class="yellow">Blesstests</span>
+
+https://github.com/SonOfLilit/blesstest/tree/main
+https://github.com/SonOfLilit/todont/blob/main/test_todont.py
+https://github.com/SonOfLilit/rps/blob/main/tests.py
+
+## <span class="violet">Snapshots + Git + DSLs + Variation trees = <span class="magic"><span>M</span><span>A</span><span>G</span><span>I</span><span>C</span></span></span>
+
+---
+
+# Final Exam
+
+Design a test suite for your largest work project that would minimize the friction of adding test cases.
+
+---
+
+<!-- _class: lead -->
+
+# Key takeaways
+
+## Testing is <span class="green">risk management</span>
+
+## Choose test cases <span class="blue">systematically</span>
+
+## Different problems need <span class="grape">different approaches</span>
+
+## Minimize <span class="red">friction</span> to add test cases
+
+---
+
+<!-- _class: lead -->
+
+# Questions?
+
+### Let's stay in touch!
+
+**Email:** aur@sarafconsulting.com
+
+**Dojo:** Wednesdays 20:00 on Zoom
+[bit.ly/aurs-dojo](https://bit.ly/aurs-dojo)
+\+ an archive of years of Dojo recordings
+\+ an (optional) active Whatsapp group
 
 <style>
     @font-face {
