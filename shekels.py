@@ -1,4 +1,3 @@
-from decimal import Decimal
 import re
 from typing import Union, List, Optional
 
@@ -78,7 +77,7 @@ def amount_to_num_string(amount: Union[str, int, float, None]) -> Optional[str]:
         return ""
 
     try:
-        num = Decimal(str(amount))
+        num = float(amount)
     except (ValueError, TypeError):
         return None
 
