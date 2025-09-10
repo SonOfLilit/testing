@@ -10,6 +10,8 @@ background-color: white
 
 <span class="green">Aur Saraf</span>, PyCon IL 2025
 
+<a href="https://creativecommons.org/licenses/by-nc/4.0/"><img decoding="async" loading="lazy" src="https://mirrors.creativecommons.org/presskit/buttons/88x31/png/by-nc.png" width="117" height="41"></a>
+
 ---
 
 # ToC
