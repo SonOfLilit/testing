@@ -53,7 +53,7 @@ def amount_to_shekels_in_hebrew(amount: Union[str, int, float, None]) -> str:
     cents_part = ""
 
     if len(components) > 1:
-        (cents_string,) = components
+        _, cents_string = components
         if len(cents_string) == 1:
             cents_string += "0"
         cents_part = cents_to_hebrew(int(cents_string))
@@ -78,7 +78,7 @@ def amount_to_num_string(amount: Union[str, int, float, None]) -> Optional[str]:
         return ""
 
     try:
-        num = Decimal(amount)
+        num = Decimal(str(amount))
     except (ValueError, TypeError):
         return None
 
