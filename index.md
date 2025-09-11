@@ -10,13 +10,17 @@ background-color: white
 
 <span class="green">Aur Saraf</span>, PyCon IL 2025
 
+<span class="yellow">A hands-on workshop covering the agreed best practices and also <i class="cyan">opinions</i></span>
+
 <a href="https://creativecommons.org/licenses/by-nc/4.0/"><img decoding="async" loading="lazy" src="https://mirrors.creativecommons.org/presskit/buttons/88x31/png/by-nc.png" width="117" height="41"></a>
 
 ---
 
-# ToC
+<!-- _class: outline-white -->
 
-## Who, Why, What
+![bg](assets/bg-blue.svg)
+
+## <span class="green">Intro</span> Who, Why, What
 
 ## <span class="green">I</span> xUnit tests
 
@@ -26,13 +30,23 @@ background-color: white
 
 ---
 
-# Intro
+<!-- _class: outline-white -->
 
-## Who am I?
+![bg](assets/bg-green.svg)
 
-## Why test?
+## <span class="green">Intro</span> Who, Why, What
 
-## What is testing?
+### Who am I?
+
+### Why test?
+
+### What is testing?
+
+## <span class="green">I</span> xUnit tests
+
+## <span class="green">II</span> Evaluating prompts
+
+## <span class="green">III</span> Mastery
 
 ---
 
@@ -98,9 +112,11 @@ Testing is <span class="green">risk management</span>
 
 ---
 
-<!-- _class: lead -->
+![bg](assets/bg-green.svg)
 
-# Part I - xUnit tests
+## <span class="green">Intro</span> Who, Why, What
+
+## <span class="green">I</span> xUnit tests
 
 #### Lets write a test
 
@@ -111,6 +127,11 @@ Testing is <span class="green">risk management</span>
 #### Design exercises
 
 #### Things that are hard to test
+
+## <span class="green">II</span> Evaluating prompts
+
+## <span class="green">III</span> Mastery
+
 
 ---
 
@@ -573,7 +594,7 @@ section {
 
 ---
 
-<!-- _class: lead -->
+![bg](assets/bg-gray.svg)
 
 ## Testing toolbox
 
@@ -807,9 +828,13 @@ https://docs.python.org/3/library/glob.html
 
 ---
 
-<!-- _class: lead -->
+![bg](assets/bg-green.svg)
 
-# Part II - Testing prompts with statistical tests
+## <span class="green">Intro</span> Who, Why, What
+
+## <span class="green">I</span> xUnit tests
+
+## <span class="green">II</span> Evaluating prompts
 
 #### Let's use an LLM to process a request
 
@@ -820,6 +845,8 @@ https://docs.python.org/3/library/glob.html
 #### Quality measures
 
 #### Production monitoring
+
+## <span class="green">III</span> Mastery
 
 ---
 
@@ -874,19 +901,19 @@ def test_palindrome():
 
 ---
 
-<!-- _class: lead -->
+![bg](assets/bg-gray.svg)
 
-# Quality measures
+## Quality measures
 
-## Deterministic measurements
+Deterministic measurements
 
-## Accuracy curves
+Accuracy curves
 
-## Human as judge
+Human as judge
 
-## LLM as judge
+LLM as judge
 
-## Ensemble
+Ensemble
 
 ---
 
@@ -1021,6 +1048,10 @@ test_set = all_examples[800:]   # For evaluation
 # It's science time!
 
 ```
+cp .env.example .env
+# make  free logfire and google ai studio accounts
+# put API keys in .env
+uv run logfire auth
 uv run python palindrome.py train
 ```
 
@@ -1028,9 +1059,11 @@ uv run python palindrome.py train
 
 ---
 
-<!-- _class: lead -->
+![bg](assets/bg-green.svg)
 
-# Part III - Mastery
+## <span class="green">II</span> Evaluating prompts
+
+## <span class="green">III</span> Mastery
 
 TDD
 
@@ -1042,7 +1075,7 @@ BDD & FIT
 
 Golden/snapshot testing
 
-Design exercise: Testing a chatbot
+Design exercise
 
 <span class="yellow">Blesstests</span>
 
@@ -1275,7 +1308,7 @@ You're building a 0% AI, 100% scripted sales chatbot
 .magic span {
     display: inline-block;
     font-size: 1.2em;
-    background-image: linear-gradient(45deg, #6930c3, #5390d9);
+    background-image: linear-gradient(45deg, #6930c3, #ffd21fff);
     background-clip: text;
     -webkit-text-fill-color: transparent;
 
@@ -1300,11 +1333,9 @@ You're building a 0% AI, 100% scripted sales chatbot
 @keyframes wave {
     0%, 100% {
         transform: translateY(10px);
-        background-position: 0 50%;
     }
     50% {
         transform: translateY(-10px);
-        background-position: 100% 50%;
     }
 }
 </style>
@@ -1341,16 +1372,9 @@ Design a test suite for your largest work project that would minimize the fricti
 
 <!-- _class: lead -->
 
-# Questions?
+![bg height:80%](assets/bg-questions.svg)
 
-### Let's stay in touch!
-
-**Email:** aur@sarafconsulting.com
-
-**Dojo:** Wednesdays 20:00 on Zoom
-[bit.ly/aurs-dojo](https://bit.ly/aurs-dojo)
-\+ an archive of years of Dojo recordings
-\+ an (optional) active Whatsapp group
+aur@sarafconsulting.com
 
 <style>
     @font-face {
@@ -1359,6 +1383,10 @@ Design a test suite for your largest work project that would minimize the fricti
         font-weight: 400;
         font-style: normal;
         font-display: swap;
+    }
+
+    section .outline-white, section[data-class="outline-white"] {
+        text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white;
     }
 
     section {
@@ -1411,7 +1439,7 @@ Design a test suite for your largest work project that would minimize the fricti
             margin-right: auto;
             }
         }
-}
+    }
 
     h1 {
         color: var(--oc-red-6);
@@ -1468,9 +1496,6 @@ Design a test suite for your largest work project that would minimize the fricti
     }
     .black {
         color: var(--oc-black);
-    }
-    .outline-white {
-        text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white;
     }
     .white {
         color: var(--oc-white-6);
